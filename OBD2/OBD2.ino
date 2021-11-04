@@ -14,23 +14,28 @@ unsigned char len = 0;
 unsigned char rxBuf[8];
 char msgString[128];                        // Array to store serial string
 
-void sendPID(unsigned char __pid)
-{
-  unsigned char tmp[8] = {0x02, 0x01, __pid, 0, 0, 0, 0, 0};
-
-  byte sndStat = CAN0.sendMsgBuf(CAN_ID_PID, 0, 8, tmp);
-
-//  if (sndStat == CAN_OK) {
-//    Serial.print("PID sent: 0x");
-//    Serial.println(__pid, HEX);
-//  }
-//  else {
-//    Serial.println("Error Sending Message...");
-//  }
-}
+//void sendPID(unsigned char __pid)
+//{
+//
+//}
 
 void receivePID(unsigned char __pid)
 {
+    
+// Формируем кадр для отправки
+  unsigned char tmp[8] = {0x02, 0x01, __pid, 0, 0, 0, 0, 0};
+// Отправляем кадр
+  byte sndStat = CAN0.sendMsgBuf(CAN_ID_PID, 0, 8, tmp);
+// Проверяем статус получения
+  if (sndStat == CAN_OK) {
+    Serial.print("PID sent: 0x");
+    Serial.println(__pid, HEX);
+  }
+  else {
+    Serial.println("Error Sending Message...");
+  }
+  delay(40);
+  
     if (!digitalRead(CAN0_INT)) {                      // If CAN0_INT pin is low, read receive buffer
     CAN0.readMsgBuf(&rxId, &len, rxBuf);               // Read data: len = data length, buf = data byte(s)
 
@@ -98,7 +103,7 @@ void setup()
 void loop()
 {
   //request coolant temp
-  sendPID(PID_COOLANT_TEMP);
+//  sendPID(PID_COOLANT_TEMP);
 
   delay(200); //to allow time for ECU to reply
 
