@@ -2,9 +2,12 @@
 #define CAN_ID_PID 0x7DF //OBD-II CAN frame ID
 #define PID_ENGINE_RPM  0x0C
 #define PID_COOLANT_TEMP 0x05
+#define PID_AMBIENT_TEMP 0x46
 
-#include <mcp_can.h>
+
 #include <SPI.h>
+#include <mcp_can.h>
+#include <SD.h>
 
 #define CAN0_INT 2                                              // Set INT to pin 2  <--------- CHANGE if using different pin number
 MCP_CAN CAN0(10);                                               // Set CS to pin 10 <--------- CHANGE if using different pin number
@@ -29,13 +32,12 @@ unsigned char * receivePID(unsigned char __pid)
       Serial.println("Error Sending Message...");               // Сообщаем о проблеме отправки
     }
 
-  delay(40);                                                    // Задержка перед получением данных
+  delay(200);                                                    // Задержка перед получением данных
 
   if (!digitalRead(CAN0_INT))                                   // If CAN0_INT pin is low, read receive buffer 
     {                                                   
       CAN0.readMsgBuf(&rxId, &len, rxBuf);                      // Read data: len = data length, buf = data byte(s)
-      sprintf(msgString, "PID: 0x%.3lX, DLC: %1d, Data: ", rxId, len);
-      Serial.print(msgString);
+      sprintf(msgString, "PID: 0x%.3lX, DLC: %1d, Data: ", rxId, len);      Serial.print(msgString);
 
       for (byte i = 0; i < len; i++) 
         {
@@ -82,9 +84,18 @@ void loop()
 {
   unsigned char * getData;
   getData = receivePID(PID_COOLANT_TEMP);
-  int temp = *(getData +3) - 40;
-  Serial.print("Coolant Temp ");
-  Serial.println(temp);
+  uint8_t ctemp = *(getData + 3) - 40;
+  Serial.print("   T ");
+  Serial.println(ctemp);
+  getData = receivePID(PID_ENGINE_RPM);
+  uint16_t rpm = (256*(*(getData + 3)) + *(getData + 4))/4;
+  Serial.print("   RPM ");
+  Serial.println(rpm);
+  getData = receivePID(PID_AMBIENT_TEMP);
+  uint8_t atemp = *(getData + 3) - 40;
+  Serial.print("   Ambient  ");
+  Serial.println(atemp);
+  
 }
 
 
