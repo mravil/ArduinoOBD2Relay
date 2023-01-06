@@ -19,9 +19,11 @@ int CoolantTempArray[9] = {80,80,80,80,80,80,80,80,80};
 int CoolantTemp;
 
 // Прототипы функций
-void CanInit(); //
-unsigned char * receivePID(unsigned char __pid); //
-int ReadTemp(); //
+void CanInit();                                   // Инициализация CAN интерфейса
+unsigned char * receivePID(unsigned char __pid);  // Получение значений посрдеством OBD2 
+int ReadTemp();                                   // Чтение температуры ОЖ
+void setRelayOut(char pwr);                       // Устанавливаем выходную мощность
+void setPower(char pwr);
 
 //Первичная конфигурация платы и периферии 
 void setup()
@@ -45,8 +47,27 @@ void loop()
   Serial.print("   Ambient  ");
   Serial.println(atemp);
   
+  if ((rpm >=700)&(atemp<=10)) {
+
+  } //if (rpm >=700)&(atemp<=10)
 }
 
+unsigned long set_delay = millis();
+char current_set = 0;
+void setRelayOut(char pwr){
+  //Pump+Heater = ppwr 
+  //1001b - 09 - 25%  = 8 + 1
+  //1011b - 11 - 50%  = 8 + 3
+  //1101b - 13 - 75%  = 8 + 5
+  //1111b - 15 - 100% = 8 + 7
+  switch (pwr){
+    case   0: setPower(0); break;
+    case  25: setPower(1); break;
+    case  50: setPower(3); break;
+    case  75: setPower(5); break;
+    case 100: setPower(7); break;
+  }
+}
 
 //Functions
 //Чтение температуры
@@ -120,7 +141,7 @@ unsigned char * receivePID(unsigned char __pid)
       Serial.println("Error Sending Message...");               // Сообщаем о проблеме отправки
     }
 
-  delay(200);                                                    // Задержка перед получением данных
+  delay(200);                                                   // Задержка перед получением данных
 
   if (!digitalRead(CAN0_INT))                                   // If CAN0_INT pin is low, read receive buffer 
     {                                                   
@@ -138,26 +159,23 @@ unsigned char * receivePID(unsigned char __pid)
    return rxBuf;
 } //end receivePID
 
-
-void notUsed(char __pid)
-{
-//      switch (__pid) {
-//      case PID_COOLANT_TEMP:
-//        if(rxBuf[2] == PID_COOLANT_TEMP){
-//          uint8_t temp;
-//          temp = rxBuf[3] - 40;
-//          Serial.print("Engine Coolant Temp (degC): ");
-//          Serial.println(temp, DEC);
-//        }
-//      break;
-//
-//      case PID_ENGINE_RPM:
-//        if(rxBuf[2] == PID_ENGINE_RPM){
-//          uint16_t rpm;
-//          rpm = ((256 * rxBuf[3]) + rxBuf[4]) / 4;
-//          Serial.print("Engine Speed (rpm): ");
-//          Serial.println(rpm, DEC);
-//        }
-//      break;
-//    }
-}
+char prev = 0;
+ void setPower(char pwr){
+   if (prev != pwr)
+   if (prev < pwr)
+   for (char i=prev;i<=pwr;++i){
+      if (i%2 != 0) {
+	    PORTB = i + 8;
+	    delay(500);
+	 } //if i%2
+	 }
+   else 
+   for (char i=prev;i>=pwr;--i)
+      if (i%2 != 0 || i == 0) {
+	    PORTB = i + 8;
+	    delay(500);
+	 } //if i%2
+	 prev = pwr;
+   delay(2000);
+   if (pwr == 0) PORTB = 0;
+ }
